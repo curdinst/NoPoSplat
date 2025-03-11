@@ -11,8 +11,8 @@ from jaxtyping import Float, Int, UInt8
 from torch import Tensor
 from tqdm import tqdm
 
-INPUT_IMAGE_DIR = Path("/users/bye/scratch/dl3dv/DL3DV-ALL-480P")
-OUTPUT_DIR = Path("/users/bye/scratch/dl3dv/DL3DV-ALL-480P/Chunks")
+INPUT_IMAGE_DIR = Path("/home/curdin/datasets/DL3DV_subset")
+OUTPUT_DIR = Path("/home/curdin/datasets/DL3DV_subset_torch")
 
 
 # Target 100 MB per chunk.
@@ -21,18 +21,21 @@ TARGET_BYTES_PER_CHUNK = int(1e8)
 
 def get_example_keys(stage: Literal["test", "train"]) -> list[str]:
     subsets = ['1K', '2K', '3K', '4K', '5K', '6K', '7K', '8K', '9K', '10K', '11K']
+    subsets = subsets[3:4]
     keys = []
     for subset in subsets:
         subdir = INPUT_IMAGE_DIR / subset
+        print(subdir)
         # iterate through all the subdirectories
+
         for key in subdir.iterdir():
             if key.is_dir():
                 item = key.name.split('/')[-1]
                 item = '/'.join([subset, item])
-                print(item)
                 keys.append(item)
 
     keys.sort()
+    print("keys:", keys)
     return keys
 
 
@@ -110,7 +113,7 @@ def load_metadata(file_path: Path) -> Metadata:
 
 if __name__ == "__main__":
     # for stage in ("train", "test"):
-    for stage in ["train"]:
+    for stage in ["test"]:
         keys = get_example_keys(stage)
 
         chunk_size = 0

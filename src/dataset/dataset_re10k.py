@@ -91,8 +91,8 @@ class DatasetRE10k(IterableDataset):
     def __iter__(self):
         # Chunks must be shuffled here (not inside __init__) for validation to show
         # random chunks.
-        if self.stage in ("train", "val"):
-            self.chunks = self.shuffle(self.chunks)
+        # if self.stage in ("train", "val"):
+        #     self.chunks = self.shuffle(self.chunks)
 
         # When testing, the data loaders alternate chunks.
         worker_info = torch.utils.data.get_worker_info()
@@ -112,10 +112,26 @@ class DatasetRE10k(IterableDataset):
                 assert len(item) == 1
                 chunk = item * len(chunk)
 
-            if self.stage in ("train", "val"):
-                chunk = self.shuffle(chunk)
+            item = [x for x in chunk if x["key"] == "1214f2a11a9fc1ed"]
+            print("len(item)", len(item))
+            # assert len(item) == 1
+            if len(item) != 1:
+                continue
+            chunk = item * len(chunk)
+            # print("chunk before shuffle", [example["key"] for example in chunk])
+            # if self.stage in ("train", "val"):
+            #     chunk = self.shuffle(chunk)
 
-            for example in chunk:
+            # print("chunk after shuffle", [example["key"] for example in chunk])
+            # example = chunk[0]
+            # for i in range(2):a
+            
+            # for example in chunk:
+            example = chunk[0]
+            print("Num images", len(example["images"]))
+            context_indices_list = [torch.tensor([47,260]),torch.tensor([50,85])]
+            target_indices_list = [torch.tensor([7,30,70]),torch.tensor([30,70,85])]
+            for i in range(1):
                 extrinsics, intrinsics = self.convert_poses(example["cameras"])
                 scene = example["key"]
 
@@ -125,10 +141,18 @@ class DatasetRE10k(IterableDataset):
                         extrinsics,
                         intrinsics,
                     )
+                    context_indices = context_indices_list[i]
+                    target_indices = target_indices_list[i]
+                    # print("overlap", overlap)
+                    # print("context_indices", context_indices)
+                    # print("target_indices", target_indices)
+                    # print("key", example["key"])
                 except ValueError:
                     # Skip because the example doesn't have enough frames.
+                    print("Skipped", example["key"])
                     continue
-
+                scene = example["key"]+"_"+str(i)
+                print("test, ", scene)
                 # Skip the example if the field of view is too wide.
                 if (get_fov(intrinsics).rad2deg() > self.cfg.max_fov).any():
                     continue
@@ -178,7 +202,7 @@ class DatasetRE10k(IterableDataset):
                 if self.cfg.relative_pose:
                     extrinsics = camera_normalization(extrinsics[context_indices][0:1], extrinsics)
 
-                example = {
+                example_out = {
                     "context": {
                         "extrinsics": extrinsics[context_indices],
                         "intrinsics": intrinsics[context_indices],
@@ -199,8 +223,8 @@ class DatasetRE10k(IterableDataset):
                     "scene": scene,
                 }
                 if self.stage == "train" and self.cfg.augment:
-                    example = apply_augmentation_shim(example)
-                yield apply_crop_shim(example, tuple(self.cfg.input_image_shape))
+                    example_out = apply_augmentation_shim(example_out)
+                yield apply_crop_shim(example_out, tuple(self.cfg.input_image_shape))
 
     def convert_poses(
         self,
