@@ -129,9 +129,9 @@ class DatasetRE10k(IterableDataset):
             # for example in chunk:
             example = chunk[0]
             print("Num images", len(example["images"]))
-            context_indices_list = [torch.tensor([47,260]),torch.tensor([50,85])]
+            context_indices_list = [torch.tensor([47,50]),torch.tensor([50,85])]
             target_indices_list = [torch.tensor([7,30,70]),torch.tensor([30,70,85])]
-            for i in range(1):
+            for i in range(2):
                 extrinsics, intrinsics = self.convert_poses(example["cameras"])
                 scene = example["key"]
 

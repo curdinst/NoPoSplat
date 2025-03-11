@@ -42,6 +42,8 @@ from ..visualization.validation_in_3d import render_cameras, render_projections
 from .decoder.decoder import Decoder, DepthRenderingMode
 from .encoder import Encoder
 from .encoder.visualization.encoder_visualizer import EncoderVisualizer
+from .ply_export import export_ply
+
 
 
 @dataclass
@@ -213,7 +215,7 @@ class ModelWrapper(LightningModule):
 
     def test_step(self, batch, batch_idx):
         batch: BatchedExample = self.data_shim(batch)
-
+        # print("Batch: ", batch)
         b, v, _, h, w = batch["target"]["image"].shape
         assert b == 1
         if batch_idx % 100 == 0:
@@ -272,6 +274,32 @@ class ModelWrapper(LightningModule):
                 path / "video" / f"{scene}_frame_{frame_str}.mp4",
             )
 
+        visualization_dump = {}
+        context = batch["context"]
+        result = self.encoder.forward(
+            context,
+            self.global_step,
+            visualization_dump=visualization_dump,
+        )
+
+        # print("Wandb run: ", wandb.run)
+        # if self.cfg.export_ply and wandb.run is not None:
+        save_ply = True
+        if save_ply:
+            plyname = batch["scene"][0]
+            print("Exporting ply as ", plyname)
+            # name = wandb.run._name.split(" ")[0]
+            ply_path = Path(f"outputs/gaussians/{plyname}.ply")
+            export_ply(
+                # context["extrinsics"][0, 0],
+                result.means[0],
+                visualization_dump["scales"][0],
+                visualization_dump["rotations"][0],
+                result.harmonics[0],
+                result.opacities[0],
+                ply_path,
+            )
+
         if self.test_cfg.save_compare:
             # Construct comparison image.
             context_img = inverse_normalize(batch["context"]["image"][0])
@@ -281,6 +309,13 @@ class ModelWrapper(LightningModule):
                 add_label(vcat(*rgb_pred), "Target (Prediction)"),
             )
             save_image(comparison, path / f"{scene}.png")
+        
+        print("Test_step encoder visualizer: ", self.encoder_visualizer)
+        if self.encoder_visualizer is not None:
+            for k, image in self.encoder_visualizer.visualize(
+                batch["context"], self.global_step
+            ).items():
+                self.logger.log_image(k, [prep_image(image)], step=self.global_step)
 
     def test_step_align(self, batch, gaussians):
         self.encoder.eval()
@@ -343,6 +378,7 @@ class ModelWrapper(LightningModule):
                         extrinsics = rearrange(new_extrinsic, "(b v) i j -> b v i j", b=b, v=v)
 
         # Render Gaussians.
+
         output = self.decoder.forward(
             gaussians,
             extrinsics,
@@ -461,7 +497,7 @@ class ModelWrapper(LightningModule):
         self.logger.log_image(
             "cameras", [prep_image(add_border(cameras))], step=self.global_step
         )
-
+        print("encoder visualizer: ", self.encoder_visualizer)
         if self.encoder_visualizer is not None:
             for k, image in self.encoder_visualizer.visualize(
                 batch["context"], self.global_step

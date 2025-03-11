@@ -96,7 +96,7 @@ def train(cfg_dict: DictConfig):
         num_nodes=cfg.trainer.num_nodes,
         accelerator="gpu",
         logger=logger,
-        devices="auto",
+        devices=1,
         strategy=(
             "ddp_find_unused_parameters_true"
             if torch.cuda.device_count() > 1
@@ -134,7 +134,7 @@ def train(cfg_dict: DictConfig):
             missing_keys, unexpected_keys = encoder.load_state_dict(ckpt_weights, strict=False)
         else:
             raise ValueError(f"Invalid checkpoint format: {weight_path}")
-
+    print("encoder_visualizer: ", encoder_visualizer)
     model_wrapper = ModelWrapper(
         cfg.optimizer,
         cfg.test,
