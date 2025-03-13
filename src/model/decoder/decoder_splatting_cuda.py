@@ -28,6 +28,7 @@ class DecoderSplattingCUDA(Decoder[DecoderSplattingCUDACfg]):
     ) -> None:
         super().__init__(cfg)
         self.make_scale_invariant = cfg.make_scale_invariant
+        print("Scale Invariant: ", self.make_scale_invariant)
         self.register_buffer(
             "background_color",
             torch.tensor(cfg.background_color, dtype=torch.float32),

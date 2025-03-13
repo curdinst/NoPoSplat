@@ -148,6 +148,7 @@ class PoseEvaluator(LightningModule):
 
             # eval pose
             gt_pose = batch["context"]["extrinsics"][0, 1]
+            print(batch["scene"], "extrinsics: ", extrinsics)
             eval_pose = extrinsics[0, 0]
             error_t, error_t_scale, error_R = compute_pose_error(gt_pose, eval_pose)
             error_pose = torch.max(error_t, error_R)  # find the max error

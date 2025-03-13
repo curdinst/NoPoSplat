@@ -128,9 +128,14 @@ class DatasetRE10k(IterableDataset):
             
             # for example in chunk:
             example = chunk[0]
-            print("Num images", len(example["images"]))
-            context_indices_list = [torch.tensor([10,120]),torch.tensor([120,260])]
-            target_indices_list = [torch.tensor([5,55,180]),torch.tensor([55,180,270])]
+            num_imgs = len(example["images"])
+            print("Num images", num_imgs)
+            img1, img2, img3 = 60, 120, 180
+            print("Input Sequence: ", img1, img2, img3)
+            target1, target2 = int((img2-img1)/2+img1), int((img3-img2)/2+img2)
+            print("Target frames: ", target1, target2)
+            context_indices_list = [torch.tensor([img1, img2]),torch.tensor([img2, img3])]
+            target_indices_list = [torch.tensor([0,target1,target2]),torch.tensor([target1,target2,num_imgs-1])]
             for i in range(2):
                 extrinsics, intrinsics = self.convert_poses(example["cameras"])
                 scene = example["key"]
@@ -151,7 +156,7 @@ class DatasetRE10k(IterableDataset):
                     # Skip because the example doesn't have enough frames.
                     print("Skipped", example["key"])
                     continue
-                scene = example["key"]+"_"+str(i)
+                scene = example["key"]+"_"+str(context_indices[0].item())+"_"+str(context_indices[1].item())
                 print("test, ", scene)
                 # Skip the example if the field of view is too wide.
                 if (get_fov(intrinsics).rad2deg() > self.cfg.max_fov).any():

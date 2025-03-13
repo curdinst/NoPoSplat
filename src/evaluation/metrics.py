@@ -95,5 +95,6 @@ def compute_pose_error(pose_gt, pose_pred):
     error_t = angle_error_vec(t, t_gt)
     error_t = torch.minimum(error_t, 180 - error_t)  # ambiguity of E estimation
     error_t_scale = compute_translation_error(t, t_gt)
+    print("t: ",t, "GT t: ", t_gt)
     error_R = angle_error_mat(R, R_gt)
     return error_t, error_t_scale, error_R
