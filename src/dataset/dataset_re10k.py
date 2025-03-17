@@ -130,7 +130,7 @@ class DatasetRE10k(IterableDataset):
             example = chunk[0]
             num_imgs = len(example["images"])
             print("Num images", num_imgs)
-            img1, img2, img3 = 60, 120, 180
+            img1, img2, img3 = 180, 210, 240
             print("Input Sequence: ", img1, img2, img3)
             target1, target2 = int((img2-img1)/2+img1), int((img3-img2)/2+img2)
             print("Target frames: ", target1, target2)
