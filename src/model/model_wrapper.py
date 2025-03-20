@@ -345,6 +345,8 @@ class ModelWrapper(LightningModule):
             pose_optimizer = torch.optim.Adam(opt_params)
 
             extrinsics = batch["target"]["extrinsics"].clone()
+            # extrinsicslist = torch.eye(4).tolist()
+            # extrinsics = torch.tensor([[extrinsicslist, extrinsicslist, extrinsicslist]]).cuda(device="cuda:0")
             # print("extrinsics from batch: \n", extrinsics)
             with self.benchmarker.time("optimize"):
                 for i in range(self.test_cfg.pose_align_steps):
