@@ -148,7 +148,9 @@ class PoseEvaluator(LightningModule):
 
             # eval pose
             gt_pose = batch["context"]["extrinsics"][0, 1]
-            print(batch["scene"], "extrinsics: ", extrinsics)
+            print("all extrinsics: \n", batch["context"]["extrinsics"])
+            
+            print(batch["scene"], "extrinsics: \n", extrinsics)
             output_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_out/{batch['scene'][0]}.json")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             # Save extrinsics as JSON

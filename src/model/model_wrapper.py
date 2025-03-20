@@ -5,6 +5,7 @@ from typing import Optional, Protocol, runtime_checkable, Any
 import moviepy.editor as mpy
 import torch
 import wandb
+import json
 from einops import pack, rearrange, repeat
 from jaxtyping import Float
 from lightning.pytorch import LightningModule
@@ -344,6 +345,7 @@ class ModelWrapper(LightningModule):
             pose_optimizer = torch.optim.Adam(opt_params)
 
             extrinsics = batch["target"]["extrinsics"].clone()
+            # print("extrinsics from batch: \n", extrinsics)
             with self.benchmarker.time("optimize"):
                 for i in range(self.test_cfg.pose_align_steps):
                     pose_optimizer.zero_grad()
@@ -372,11 +374,22 @@ class ModelWrapper(LightningModule):
                                                     cam_trans_delta=rearrange(cam_trans_delta, "b v i -> (b v) i"),
                                                     extrinsics=rearrange(extrinsics, "b v i j -> (b v) i j")
                                                     )
+                        # print("extrinsics ---->: ", extrinsics[0,0,:3,3])
                         cam_rot_delta.data.fill_(0)
                         cam_trans_delta.data.fill_(0)
 
                         extrinsics = rearrange(new_extrinsic, "(b v) i j -> b v i j", b=b, v=v)
 
+        print(batch["scene"])
+        print("new extrinsics:", batch["scene"][0] ,":\n", extrinsics)
+        print(batch["scene"], "extrinsics: \n", extrinsics)
+        output_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_target/{batch['scene'][0]}_target.pt")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        # Save extrinsics as JSON
+        torch.save(extrinsics, output_path)
+        # with output_path.open("w") as f:
+        #     json.dump(extrinsics.tolist(), f)  # Convert tensor to list
+        # eval_pose = extrinsics[0, 0]
         # Render Gaussians.
 
         output = self.decoder.forward(

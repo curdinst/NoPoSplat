@@ -112,7 +112,8 @@ class DatasetRE10k(IterableDataset):
                 assert len(item) == 1
                 chunk = item * len(chunk)
 
-            item = [x for x in chunk if x["key"] == "1214f2a11a9fc1ed"]
+            # item = [x for x in chunk if x["key"] == "1214f2a11a9fc1ed"]
+            item = [x for x in chunk if x["key"] == "c48f19e2ffa52523"]
             print("len(item)", len(item))
             # assert len(item) == 1
             if len(item) != 1:
@@ -129,14 +130,32 @@ class DatasetRE10k(IterableDataset):
             # for example in chunk:
             example = chunk[0]
             num_imgs = len(example["images"])
-            print("Num images", num_imgs)
-            img1, img2, img3 = 180, 210, 240
-            print("Input Sequence: ", img1, img2, img3)
-            target1, target2 = int((img2-img1)/2+img1), int((img3-img2)/2+img2)
-            print("Target frames: ", target1, target2)
-            context_indices_list = [torch.tensor([img1, img2]),torch.tensor([img2, img3])]
-            target_indices_list = [torch.tensor([0,target1,target2]),torch.tensor([target1,target2,num_imgs-1])]
-            for i in range(2):
+            # print("Num images", num_imgs)
+            # img1, img2, img3 = 180, 210, 240
+            # print("Input Sequence: ", img1, img2, img3)
+            # target1, target2 = int((img2-img1)/2+img1), int((img3-img2)/2+img2)
+            # print("Target frames: ", target1, target2)
+            # context_indices_list = [torch.tensor([img1, img2]),torch.tensor([img2, img3])]
+            # target_indices_list = [torch.tensor([0,target1,target2]),torch.tensor([target1,target2,num_imgs-1])]
+
+            start_idx = 0
+            end_idx = 40
+            step = 20
+            last_idx = start_idx
+            last_last_idx = start_idx
+            context_indices_list = []
+            target_indices_list = []
+            for i in range(start_idx, end_idx, step):
+                if i == start_idx: continue
+                context_indices_list.append(torch.tensor([last_idx, i]))
+                target_indices_list.append(torch.tensor([max(last_last_idx, 0), i, i+step]))
+                last_last_idx = last_idx
+                last_idx = i
+            print("Context pairs list: ", context_indices_list)
+
+            for i in range(len(context_indices_list)):
+                print("inputs: ", context_indices_list[i])
+                print("targets", target_indices_list[i])
                 extrinsics, intrinsics = self.convert_poses(example["cameras"])
                 scene = example["key"]
 
@@ -173,6 +192,7 @@ class DatasetRE10k(IterableDataset):
                     ]
                     target_images = self.convert_images(target_images)
                 except IndexError:
+                    print("IndexError")
                     continue
                 except OSError:
                     print(f"Skipped bad example {example['key']}.")  # DL3DV-Full have some bad images
@@ -192,6 +212,7 @@ class DatasetRE10k(IterableDataset):
                 # Resize the world to make the baseline 1.
                 context_extrinsics = extrinsics[context_indices]
                 if self.cfg.make_baseline_1:
+                    print("resize to make_baseline_1")
                     a, b = context_extrinsics[0, :3, 3], context_extrinsics[-1, :3, 3]
                     scale = (a - b).norm()
                     if scale < self.cfg.baseline_min or scale > self.cfg.baseline_max:
