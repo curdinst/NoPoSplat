@@ -345,8 +345,35 @@ class ModelWrapper(LightningModule):
             pose_optimizer = torch.optim.Adam(opt_params)
 
             extrinsics = batch["target"]["extrinsics"].clone()
-            # extrinsicslist = torch.eye(4).tolist()
-            # extrinsics = torch.tensor([[extrinsicslist, extrinsicslist, extrinsicslist]]).cuda(device="cuda:0")
+            print("gt extrinsics: \n", extrinsics[0,0])
+
+            extrinsicslist = torch.eye(4).tolist()
+            extrinsics_0 = [[ 9.91721928e-01,  1.72879249e-02, -1.27251714e-01, -9.36662077e-01],
+                            [-1.71153639e-02,  9.99850869e-01,  2.44829897e-03,  2.90720805e-01],
+                            [ 1.27275869e-01, -2.50215409e-04,  9.91870761e-01,  1.92688884e-01],
+                            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00],]
+            extrinsics = torch.tensor([[extrinsicslist, extrinsicslist, extrinsicslist]]).cuda(device="cuda:0")
+
+            batch_name = batch["scene"][0]
+            frames = batch_name.split("_")
+            frame1, frame2 = int(frames[1]), int(frames[2])
+            step = frame2-frame1
+            last_frames_filename = frames[0] + "_" + str(frame1-step) + "_" + frames[1]
+            last_tf_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_out/{last_frames_filename}.pt")
+            try:
+                tf_01 = torch.load(last_tf_path)
+                r_01 = tf_01[0,0,:3,:3]
+                t_01 = tf_01[0,0,:3,3]
+                tf_10 = torch.eye(4)
+                tf_10[:3,:3] = r_01.T
+                tf_10[:3,3] = -r_01.T @ t_01
+                extrinsics[0,0] = tf_10
+            except:
+                print("File", last_frames_filename, "not found")
+            print("initial extrinsics: \n", extrinsics[0,0])
+
+            # print("last run extrinsics: \n", extrinsics[0,0].items())
+
             # print("extrinsics from batch: \n", extrinsics)
             with self.benchmarker.time("optimize"):
                 for i in range(self.test_cfg.pose_align_steps):
@@ -383,8 +410,8 @@ class ModelWrapper(LightningModule):
                         extrinsics = rearrange(new_extrinsic, "(b v) i j -> b v i j", b=b, v=v)
 
         print(batch["scene"])
-        print("new extrinsics:", batch["scene"][0] ,":\n", extrinsics)
-        print(batch["scene"], "extrinsics: \n", extrinsics)
+        print("new extrinsics:", batch["scene"][0] ,":\n", extrinsics[0,0])
+        # print(batch["scene"], "extrinsics: \n", extrinsics)
         output_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_target/{batch['scene'][0]}_target.pt")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         # Save extrinsics as JSON

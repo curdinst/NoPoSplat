@@ -151,11 +151,12 @@ class PoseEvaluator(LightningModule):
             print("all extrinsics: \n", batch["context"]["extrinsics"])
             
             print(batch["scene"], "extrinsics: \n", extrinsics)
-            output_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_out/{batch['scene'][0]}.json")
+            output_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_out/{batch['scene'][0]}.pt")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             # Save extrinsics as JSON
-            with output_path.open("w") as f:
-                json.dump(extrinsics.tolist(), f)  # Convert tensor to list
+            torch.save(extrinsics, output_path)
+            # with output_path.open("w") as f:
+            #     json.dump(extrinsics.tolist(), f)  # Convert tensor to list
             eval_pose = extrinsics[0, 0]
             error_t, error_t_scale, error_R = compute_pose_error(gt_pose, eval_pose)
             error_pose = torch.max(error_t, error_R)  # find the max error

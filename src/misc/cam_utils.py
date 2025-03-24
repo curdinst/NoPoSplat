@@ -26,7 +26,7 @@ def compose_extrinsic_RT(RT: torch.Tensor):
 
 def camera_normalization(pivotal_pose: torch.Tensor, poses: torch.Tensor):
     # [1, 4, 4], [N, 4, 4]
-    print("poses:\n", poses)
+    # print("poses:\n", poses)
     canonical_camera_extrinsics = torch.tensor([[
         [1, 0, 0, 0],
         [0, 1, 0, 0],
@@ -38,7 +38,7 @@ def camera_normalization(pivotal_pose: torch.Tensor, poses: torch.Tensor):
 
     # normalize all views
     poses = torch.bmm(camera_norm_matrix.repeat(poses.shape[0], 1, 1), poses)
-    print("normalized poses:\n", poses)
+    # print("normalized poses:\n", poses)
     return poses
 
 
