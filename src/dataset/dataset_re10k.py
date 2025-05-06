@@ -112,8 +112,8 @@ class DatasetRE10k(IterableDataset):
                 assert len(item) == 1
                 chunk = item * len(chunk)
 
-            item = [x for x in chunk if x["key"] == "1214f2a11a9fc1ed"]
-            # item = [x for x in chunk if x["key"] == "c48f19e2ffa52523"]
+            # item = [x for x in chunk if x["key"] == "1214f2a11a9fc1ed"]
+            item = [x for x in chunk if x["key"] == "c48f19e2ffa52523"]
             print("len(item)", len(item))
             # assert len(item) == 1
             if len(item) != 1:
@@ -138,9 +138,9 @@ class DatasetRE10k(IterableDataset):
             # context_indices_list = [torch.tensor([img1, img2]),torch.tensor([img2, img3])]
             # target_indices_list = [torch.tensor([0,target1,target2]),torch.tensor([target1,target2,num_imgs-1])]
 
-            start_idx = 50
-            end_idx = 250
-            step = 25
+            start_idx = 0
+            end_idx = 100
+            step = 10
             last_idx = start_idx
             last_last_idx = start_idx
             context_indices_list = []

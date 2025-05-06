@@ -132,6 +132,7 @@ class ModelWrapper(LightningModule):
 
         # This is used for testing.
         self.benchmarker = Benchmarker()
+        self.gaussian_mean_dict = {}
 
     def training_step(self, batch, batch_idx):
         # combine batch from different dataloaders
@@ -300,6 +301,12 @@ class ModelWrapper(LightningModule):
                 result.opacities[0],
                 ply_path,
             )
+        print(result.means[0].shape)
+        means = torch.mean(result.means[0], dim=0)
+        mean = torch.linalg.norm(means)
+        print("Means: ", means, mean)
+        self.gaussian_mean_dict[plyname[17:]] = mean
+        # print("dict: ", self.gaussian_mean_dict)
 
         if self.test_cfg.save_compare:
             # Construct comparison image.
@@ -348,25 +355,30 @@ class ModelWrapper(LightningModule):
             print("gt extrinsics: \n", extrinsics[0,0])
 
             extrinsicslist = torch.eye(4).tolist()
-            extrinsics_0 = [[ 9.91721928e-01,  1.72879249e-02, -1.27251714e-01, -9.36662077e-01],
-                            [-1.71153639e-02,  9.99850869e-01,  2.44829897e-03,  2.90720805e-01],
-                            [ 1.27275869e-01, -2.50215409e-04,  9.91870761e-01,  1.92688884e-01],
-                            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00],]
+            # extrinsics_0 = [[ 9.91721928e-01,  1.72879249e-02, -1.27251714e-01, -9.36662077e-01],
+            #                 [-1.71153639e-02,  9.99850869e-01,  2.44829897e-03,  2.90720805e-01],
+            #                 [ 1.27275869e-01, -2.50215409e-04,  9.91870761e-01,  1.92688884e-01],
+            #                 [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00],]
             extrinsics = torch.tensor([[extrinsicslist, extrinsicslist, extrinsicslist]]).cuda(device="cuda:0")
 
             batch_name = batch["scene"][0]
             frames = batch_name.split("_")
             frame1, frame2 = int(frames[1]), int(frames[2])
             step = frame2-frame1
+            mean = torch.linalg.norm(torch.mean(gaussians.means[0], dim=0))
             last_frames_filename = frames[0] + "_" + str(frame1-step) + "_" + frames[1]
             last_tf_path = Path(f"/home/curdinst/repos/NoPoSplat/outputs/Pose_out/{last_frames_filename}.pt")
+            print(mean/mean)
+            # print(self.gaussian_mean_dict[str(frame1) + "_" + str(frame2)].item()/self.gaussian_mean_dict[str(frame1) + "_" + str(frame2)].item())
             try:
+                scale = self.gaussian_mean_dict[str(frame1-step) + "_" + str(frame1)] / mean
+                print("Scaling with: ", scale)
                 tf_01 = torch.load(last_tf_path)
                 r_01 = tf_01[0,0,:3,:3]
                 t_01 = tf_01[0,0,:3,3]
                 tf_10 = torch.eye(4)
                 tf_10[:3,:3] = r_01.T
-                tf_10[:3,3] = -r_01.T @ t_01
+                tf_10[:3,3] = -(r_01.T @ t_01)/scale
                 extrinsics[0,0] = tf_10
             except:
                 print("File", last_frames_filename, "not found")
